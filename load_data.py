@@ -29,6 +29,6 @@ def load_spotify_data_from_zip() -> pd.DataFrame:
         df = df.sort_values(by='ts')
         return df
 
-def load_spotify_data_from_csv(file):
-    df = pd.read_csv('export/{}'.format(file))
+def load_spotify_data_from_csv(filepath):
+    df = pd.read_csv(filepath)
     return df
