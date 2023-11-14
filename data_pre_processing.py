@@ -4,25 +4,27 @@ import pandas as pd
 import consts
 import time
 
-def get_track_genres(df, auth):
+def get_extended_track_info(year, df, auth):
     batch_size = 50
 
     all_genres = []
     all_artists = []
+    all_artworks = []
     for i in range(0, len(df), batch_size):
         batch_num = i // batch_size + 1
         batch = df['trid'].iloc[i:i+batch_size].tolist()
-        print("Processing batch {} / {}".format(batch_num, len(df) // batch_size + 1))
+        print("Processing {}, batch {} / {}".format(year, batch_num, len(df) // batch_size + 1))
 
-        time.sleep(1)
-        artists = api_extracter.get_artist_ids_from_tracks(batch, auth)
+        time.sleep(0.25)
+        artists, artworks = api_extracter.get_track_data(batch, auth)
         all_artists.extend(artists)
+        all_artworks.extend(artworks)
 
-        time.sleep(1)
+        time.sleep(0.25)
         genres = api_extracter.get_genres_from_artists(artists, auth)
         all_genres.extend(genres)
 
-    return all_artists, all_genres
+    return all_artists, all_genres, all_artworks
         
 
 df = load_data.load_spotify_data_from_zip()
@@ -35,17 +37,20 @@ df['ts'] = pd.to_datetime(df['ts'])
 df['trid'] = df['spotify_track_uri'].str.replace("spotify:track:", "")
 df = df.drop('spotify_track_uri', axis=1)
 
-year = 2012
-df = df[df['ts'].dt.year == year]
+years = df['ts'].dt.year.unique()
 
-auth = consts.auth
-artist_ids, genres = get_track_genres(df, auth)
+for year in years:
+    df_y = df[df['ts'].dt.year == year]
 
-df['arid'] = artist_ids
+    auth = consts.auth
+    artist_ids, genres, artworks = get_extended_track_info(year, df_y, auth)
 
-df['genres'] = genres
-df['genres'] = df['genres'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
-df['genres'] = df['genres'].replace("", "undefined")
+    df_y['arid'] = artist_ids
 
-# Save DataFrame to CSV
-df.to_csv('export/{}_listening_data.csv'.format(year), index=False)
+    df_y['genres'] = genres
+    df_y['genres'] = df_y['genres'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+    df_y['genres'] = df_y['genres'].replace("", "undefined")
+
+    df_y['artwork'] = artworks
+
+    df_y.to_csv('export/{}_listening_data.csv'.format(year), index=False)
