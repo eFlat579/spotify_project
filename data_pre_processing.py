@@ -15,16 +15,25 @@ def get_extended_track_info(year, df, auth):
         batch = df['trid'].iloc[i:i+batch_size].tolist()
         print("Processing {}, batch {} / {}".format(year, batch_num, len(df) // batch_size + 1))
 
-        time.sleep(0.25)
+        time.sleep(0.5)
         artists, artworks = api_extracter.get_track_data(batch, auth)
         all_artists.extend(artists)
         all_artworks.extend(artworks)
 
-        time.sleep(0.25)
+        time.sleep(0.5)
         genres = api_extracter.get_genres_from_artists(artists, auth)
         all_genres.extend(genres)
 
     return all_artists, all_genres, all_artworks
+
+def combine_dataframes(years):
+    dfs = []
+    for year in years:
+        df = load_data.load_spotify_data_from_csv("export/{}_listening_data.csv".format(year))
+        dfs.append(df)
+    all_data = pd.concat(dfs, axis=0)
+    all_data.to_csv('export/all_listening_data.csv', index=False)
+
         
 
 df = load_data.load_spotify_data_from_zip()
@@ -54,3 +63,5 @@ for year in years:
     df_y['artwork'] = artworks
 
     df_y.to_csv('export/{}_listening_data.csv'.format(year), index=False)
+
+combine_dataframes(years)
